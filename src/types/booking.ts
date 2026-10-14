@@ -30,6 +30,8 @@ export interface BookingDraft {
   genderPreference: GenderPreference;
   nurseId?: string;
   address?: string;
+  /** UAE emirate id (data/emirates.ts) for the visit address. */
+  emirate?: string;
   notes?: string;
 }
 

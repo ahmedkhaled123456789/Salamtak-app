@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { bookingsApi, type QuoteInput } from '@/api/bookings';
 import type { Booking, BookingStatus } from '@/types/booking';
 import { queryKeys } from './queryKeys';
@@ -17,6 +18,19 @@ export const PAID_STATUSES: ReadonlySet<BookingStatus> = new Set([
 
 export function useBookings(enabled = true) {
   return useQuery({ queryKey: queryKeys.bookings, queryFn: () => bookingsApi.list(), enabled });
+}
+
+/** Full booking history, loaded page by page as the list scrolls. Shares the `bookings` prefix: mutations refresh it. */
+export function useBookingList(enabled = true) {
+  const q = useInfiniteQuery({
+    queryKey: queryKeys.bookingPages,
+    queryFn: ({ pageParam }) => bookingsApi.page(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled,
+  });
+  const data = useMemo(() => q.data?.pages.flatMap((p) => p.items), [q.data]);
+  return { ...q, data };
 }
 
 /** `poll` re-reads the booking every few seconds (used while a payment is in flight). */

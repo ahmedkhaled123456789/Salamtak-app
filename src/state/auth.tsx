@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { authApi } from '@/api/auth';
 import { onSessionExpired } from '@/api/client';
 import { getTokens, loadTokens } from '@/api/tokens';
+import { registerForPush, unregisterPush } from '@/lib/push';
 import type { AccountUser, SignUpInput } from '@/types/auth';
 
 type Status = 'loading' | 'anonymous' | 'authenticated';
@@ -80,7 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return u;
   }, []);
 
+  // re-register this device for booking updates if the user already allowed notifications (never prompts here)
+  useEffect(() => {
+    if (status === 'authenticated') void registerForPush({ ask: false });
+  }, [status]);
+
   const signOut = useCallback(async () => {
+    await unregisterPush(); // while the session is still valid
     const refresh = getTokens()?.refreshToken;
     await authApi.signOut(refresh);
     client.clear();

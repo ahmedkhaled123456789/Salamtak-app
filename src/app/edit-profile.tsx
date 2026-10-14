@@ -2,12 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { CheckCircle2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { Screen } from '@/components/layout/Screen';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
+import { SelectField } from '@/components/ui/SelectField';
+import { emirates, findEmirate } from '@/data/emirates';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { usePatientProfile, useUpdateProfile } from '@/hooks/useAccount';
@@ -33,7 +35,7 @@ export default function EditProfileScreen() {
 }
 
 function EditProfile() {
-  const { t } = useI18n();
+  const { t, l } = useI18n();
   const { user } = useAuth();
   const isPatient = user?.role === 'PATIENT';
   const { data: profile } = usePatientProfile(isPatient);
@@ -45,7 +47,7 @@ function EditProfile() {
     defaultValues: { firstName: user?.firstName ?? '', lastName: user?.lastName ?? '', address: '', city: '' },
   });
   useEffect(() => {
-    if (profile) reset({ firstName: user?.firstName ?? '', lastName: user?.lastName ?? '', address: profile.address ?? '', city: profile.city ?? '' });
+    if (profile) reset({ firstName: user?.firstName ?? '', lastName: user?.lastName ?? '', address: profile.address ?? '', city: findEmirate(profile.city)?.name.en ?? profile.city ?? '' });
   }, [profile, user?.firstName, user?.lastName, reset]);
   const e = formState.errors;
 
@@ -67,7 +69,24 @@ function EditProfile() {
             {t('account.contactDetails')}
           </Text>
           <FormField control={control} name="address" label={t('booking.address')} error={e.address?.message} placeholder={t('booking.addressPlaceholder')} />
-          <FormField control={control} name="city" label={t('account.city')} error={e.city?.message} />
+          <Controller
+            control={control}
+            name="city"
+            render={({ field }) => (
+              <SelectField
+                label={t('account.city')}
+                sheetTitle={t('account.city')}
+                value={field.value}
+                onChange={field.onChange}
+                error={e.city?.message}
+                options={[
+                  ...emirates.map((em) => ({ value: em.name.en, label: l(em.name) })),
+                  // keep a previously typed city selectable instead of silently dropping it
+                  ...(field.value && !emirates.some((em) => em.name.en === field.value) ? [{ value: field.value, label: field.value }] : []),
+                ]}
+              />
+            )}
+          />
         </>
       ) : null}
       {update.isError ? (

@@ -257,6 +257,8 @@ export const en = {
     submit: 'Subscribe',
     privacy: 'We’ll only use your email for these updates. Unsubscribe anytime.',
     success: 'Demo only — your email was validated but not saved. Subscriptions aren’t connected yet.',
+    successLive: 'Almost done — check your inbox and confirm your subscription.',
+    error: 'We couldn’t subscribe you right now. Please try again.',
     label: 'Email address'
   },
   footer: {
@@ -393,6 +395,8 @@ export const en = {
     send: 'Send message',
     sending: 'Sending…',
     success: 'Demo only — your message was validated but not sent. The contact service isn’t connected yet.',
+    successLive: 'Thank you — we’ve received your message and will reply by email.',
+    error: 'Your message couldn’t be sent. Please try again in a moment.',
     detailsTitle: 'Other ways to reach us',
     emergency: 'For medical emergencies, contact your local emergency number immediately. CareFlow is not an emergency service.'
   },
@@ -528,7 +532,8 @@ export const en = {
     preferenceTitle: 'Your preferences',
     genderLabel: 'Nurse gender preference',
     address: 'Care address',
-    addressPlaceholder: 'Street, district, city',
+    addressPlaceholder: 'Street, area, building',
+    emirate: 'Emirate / city',
     notes: 'Notes for your professional (optional)',
     notesPlaceholder: 'Routines, access instructions, anything helpful',
     nurseTitle: 'Choose an available professional',

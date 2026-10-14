@@ -101,16 +101,60 @@ tests), `expo export --platform android` (Hermes bundle), `expo export --platfor
 walk-through — all against a **disposable in-memory MongoDB + local Redis + local backend**, never Atlas. Not performed: running on a
 real Android emulator/device (no Android SDK on this machine), a card payment against a real provider, push notifications.
 
+### Audit update (2026-10-11)
+
+Re-verified after the audit changes (see `../docs/FULL_PROJECT_AUDIT.md`, IDs M1–M8): `npm run typecheck` ✅, `npm run lint` ✅,
+`npm test` ✅ 35/35, `expo export --platform android` ✅ (export 14 MB → 12 MB). Changes: branded icon/adaptive icon/splash
+(`python scripts/brand-assets.py` regenerates them — the previous files were the Expo template), WebP bundled photos, per-weight
+font imports, bounded and offline-safe token refresh, font-error fallback, stricter `safeNext`. Live API tests were **not** re-run
+(they need a seeded disposable backend). Rebuild the native app to pick up the new icon and splash.
+
+## Push notifications
+
+`src/lib/push.ts` registers the device with the backend (`POST /devices`) using an **Expo push token**. Permission is
+requested right after the user creates a booking — never on first launch — and later sessions re-register silently only
+if permission was already granted. Signing out unregisters the device first. Requirements: an EAS project id
+(`eas init` writes `extra.eas.projectId` to `app.json`; without it push is skipped quietly) and `PUSH_PROVIDER=expo` on the
+backend. Android uses a `bookings` notification channel; `POST_NOTIFICATIONS` is declared in `app.json`.
+
+## Builds (EAS)
+
+`eas.json` has `development`/`preview` (internal APK) and `production` (store bundle) profiles, each with its own
+`EXPO_PUBLIC_API_BASE_URL` — replace the `example.ae` placeholders with the real API URLs. Release builds have no
+development fallback, so a missing URL shows a clear "not configured" error instead of calling the wrong server.
+
+```bash
+npm i -g eas-cli && eas login && eas init
+eas build --profile preview --platform android     # installable APK for testers
+eas build --profile production --platform android  # Play Store bundle
+```
+
+## Device test checklist (before each release)
+
+Run on at least one small Android phone (≈5.5", Android 10–11) and one large recent phone (Android 14+), in English and Arabic:
+
+1. Cold start shows the CareFlow splash, then the home screen within a few seconds; airplane mode at launch still opens the app (signed out) with a clear offline message on data screens.
+2. Sign up → phone code SMS arrives → verify; sign out; sign in again; kill the app and reopen → still signed in.
+3. Browse services and nurses (scroll long lists smoothly); open a nurse profile; images load and are not distorted.
+4. Book: pick service, dates, **emirate**, address; nurse; review the price; submit once (double-tap does not create two bookings); notification permission prompt appears after booking.
+5. Pay with a Stripe test card; booking shows "processing" then "confirmed" only after the backend confirms; cancel a booking and check the refund shown matches the policy on the FAQ.
+6. Receive a push notification for a booking update (app in background and closed); tapping it opens the app.
+7. Bookings tab: scroll to load older bookings; pull to refresh.
+8. Arabic: whole UI right-to-left, numbers and dates readable, no clipped text at the largest system font size.
+9. TalkBack: every button and form field is announced with a sensible label; focus order follows the screen.
+10. Nurse account: accept/reject a request, start and complete care, view earnings, edit availability.
+
 ## Known limitations / backend gaps
 
 * **Hosted payment**: the backend confirms payments only from the provider's webhook; with the development mock provider there is no
   hosted page, so a payment stays "processing" until the webhook fires (in dev an admin calls `/payments/dev/simulate`). A native card
   form would need the real provider's SDK.
-* **No endpoints** for newsletter, contact form, articles, FAQs or testimonials → bundled website content; newsletter/contact forms
-  validate and say plainly that nothing was sent; testimonials stay labelled "sample".
+* Contact form and newsletter now use the backend (`POST /public/contact`, `/public/newsletter`). Articles, FAQs and
+  testimonials are still bundled content; testimonials stay labelled "sample".
 * **Arabic names** of services/nurses come from the bundled website content matched by slug/name (the API has no localized fields).
-* **Nurse onboarding** (document upload, verification submission, payouts, chat, emergency offers, reviews, push) is not in v1.
+* **Nurse onboarding** (document upload, verification submission, payouts, chat, emergency offers, reviews) is not in v1.
   Nurses sign in with existing accounts; patient self-registration only.
-* **Geocoding**: no geocoder, so city-centre coordinates are sent for the service-radius check (see API plan).
+* **Location**: no geocoder; the booking sends the chosen **UAE emirate's** centre coordinates (`src/data/emirates.ts`) for the
+  service-radius check (falls back to the profile city, then the nurse's city, then Dubai).
 * The bookable window is capped by the backend (e.g. 90 days ahead); the date picker doesn't pre-empt that — the server's rejection is shown.
-* Photos are the website's JPEGs (≈100–300 KB each, 37 files); not re-compressed.
+* Photos are bundled as WebP (2.5 MB for 37 photos, was 5.8 MB of JPEG); `assets/images/*.jpg` are kept only as originals.

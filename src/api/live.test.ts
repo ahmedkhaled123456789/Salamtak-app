@@ -43,7 +43,7 @@ live('live backend', () => {
     const service = services[0]!;
     const nurse = (await catalogApi.listNurses({ serviceId: service.id }))[0]!;
     const draft = { serviceId: service.id, nurseId: nurse.id, startDate: addDays(todayIso(), 10 + Math.floor(Math.random() * 40)), days: 2, genderPreference: 'any' as const, address: '1 Palm Street' };
-    const input = { draft, patientCity: 'Riyadh', nurse };
+    const input = { draft, patientCity: 'Dubai', nurse };
 
     const quote = await bookingsApi.quote(input);
     expect(quote.payable).toBeGreaterThan(0);
@@ -99,7 +99,7 @@ live('live backend', () => {
     const nurse = (await catalogApi.listNurses({})).find((n) => n.name.en.startsWith('Layla'))!;
     const serviceId = nurse.serviceIds[0]!;
     const draft = { serviceId, nurseId: nurse.id, startDate: addDays(todayIso(), 20 + Math.floor(Math.random() * 60)), days: 1, genderPreference: 'any' as const, address: '1 Palm Street' };
-    const booking = await bookingsApi.create({ draft, patientCity: 'Riyadh', nurse }, `mob-live-${Date.now()}`);
+    const booking = await bookingsApi.create({ draft, patientCity: 'Dubai', nurse }, `mob-live-${Date.now()}`);
     const pay = await request<{ clientSecret: string }>('/payments/create', { method: 'POST', body: { bookingId: booking.id } });
 
     await saveTokens(null);

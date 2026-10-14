@@ -1,4 +1,4 @@
-import { ApiError, request } from './client';
+import { ApiError, onSessionExpired, request } from './client';
 import * as tokens from './tokens';
 
 jest.mock('@/lib/config', () => ({ config: { apiBaseUrl: 'http://api.test', requestTimeoutMs: 5000, platformUtcOffset: '+04:00', defaultCurrency: 'AED' } }));
@@ -57,5 +57,27 @@ describe('api client', () => {
     expect(tokens.saveTokens).toHaveBeenCalledWith({ accessToken: 'new-access', refreshToken: 'new-refresh' });
     const retryHeaders = (fetchMock.mock.calls[2]?.[1] as RequestInit).headers as Record<string, string>;
     expect(retryHeaders.Authorization).toBe('Bearer new-access');
+  });
+
+  it('keeps the session when the refresh call cannot reach the server', async () => {
+    await new Promise((r) => setTimeout(r, 0)); // let the previous refresh promise reset
+    const expired = jest.fn();
+    const off = onSessionExpired(expired);
+    fetchMock.mockResolvedValueOnce(json(401, { success: false })).mockRejectedValueOnce(new TypeError('Network request failed'));
+    await expect(request('/me')).rejects.toMatchObject({ code: 'network' });
+    expect(tokens.saveTokens).not.toHaveBeenCalledWith(null);
+    expect(expired).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('ends the session when the server rejects the refresh token', async () => {
+    await new Promise((r) => setTimeout(r, 0)); // let the previous refresh promise reset
+    const expired = jest.fn();
+    const off = onSessionExpired(expired);
+    fetchMock.mockResolvedValueOnce(json(401, { success: false })).mockResolvedValueOnce(json(401, { success: false }));
+    await expect(request('/me')).rejects.toMatchObject({ code: 'unauthorized' });
+    expect(tokens.saveTokens).toHaveBeenCalledWith(null);
+    expect(expired).toHaveBeenCalledTimes(1);
+    off();
   });
 });

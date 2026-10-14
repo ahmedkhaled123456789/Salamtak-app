@@ -33,4 +33,14 @@ describe('safeNext', () => {
     expect(safeNext('https://evil.com')).toBeUndefined();
     expect(safeNext(undefined)).toBeUndefined();
   });
+
+  it('rejects backslash, encoded and whitespace tricks', () => {
+    expect(safeNext('/\\evil.com')).toBeUndefined();
+    expect(safeNext('/%5Cevil.com')).toBeUndefined();
+    expect(safeNext('/%2F/evil.com')).toBeUndefined();
+    expect(safeNext('/ /evil.com')).toBeUndefined();
+    expect(safeNext('/%E0%A4%A')).toBeUndefined();
+    expect(safeNext(['/bookings', '//evil.com'])).toBe('/bookings');
+    expect(safeNext('/bookings/123?tab=history')).toBe('/bookings/123?tab=history');
+  });
 });

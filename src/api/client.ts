@@ -74,26 +74,38 @@ export interface RequestOptions {
   anonymous?: boolean;
 }
 
-let refreshing: Promise<boolean> | null = null;
+let refreshing: Promise<RefreshOutcome> | null = null;
+
+/**
+ * `rejected`: the server refused the refresh token, so the session is over.
+ * `unreachable`: network failure, timeout or server error, so keep the tokens and let the caller retry.
+ */
+type RefreshOutcome = 'ok' | 'rejected' | 'unreachable';
 
 /** Rotates the refresh token once for any number of concurrent 401s. */
-function refreshSession(): Promise<boolean> {
-  refreshing ??= (async () => {
+function refreshSession(): Promise<RefreshOutcome> {
+  refreshing ??= (async (): Promise<RefreshOutcome> => {
     const tokens = getTokens();
-    if (!tokens) return false;
+    if (!tokens) return 'rejected';
+    // Same budget as every other request: a stalled network must not hold the splash / a screen forever.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.requestTimeoutMs);
     try {
       const res = await fetch(`${config.apiBaseUrl}/api/v1/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        signal: controller.signal,
       });
-      if (!res.ok) return false;
+      if (res.status >= 500) return 'unreachable';
+      if (!res.ok) return 'rejected';
       const body = (await res.json()) as Envelope<Tokens>;
       await saveTokens({ accessToken: body.data.accessToken, refreshToken: body.data.refreshToken });
-      return true;
+      return 'ok';
     } catch {
-      return false;
+      return 'unreachable';
     } finally {
+      clearTimeout(timer);
       setTimeout(() => {
         refreshing = null;
       }, 0);
@@ -135,10 +147,14 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   try {
     response = await send(path, options);
     if (response.status === 401 && !options.anonymous && getTokens()) {
-      if (await refreshSession()) response = await send(path, options);
-      else {
+      const outcome = await refreshSession();
+      if (outcome === 'ok') response = await send(path, options);
+      else if (outcome === 'rejected') {
         await saveTokens(null);
         expiredListeners.forEach((l) => l());
+      } else {
+        // Couldn't reach the server to refresh: keep the session, report a network error the UI can retry.
+        throw new Error('Could not refresh the session');
       }
     }
   } catch (error) {

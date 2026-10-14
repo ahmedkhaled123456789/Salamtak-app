@@ -16,12 +16,15 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { QueryError, StateMessage } from '@/components/ui/StateMessage';
 import { Text } from '@/components/ui/Text';
+import { SelectField } from '@/components/ui/SelectField';
 import { TextField } from '@/components/ui/TextField';
+import { emirates, findEmirate } from '@/data/emirates';
 import { usePatientProfile } from '@/hooks/useAccount';
 import { useCreateBooking, useQuote } from '@/hooks/useBookings';
 import { useNurse, useNurses, useServices } from '@/hooks/useCatalog';
 import { useI18n, type TranslationKey } from '@/i18n';
 import { errorKey } from '@/lib/errors';
+import { registerForPush } from '@/lib/push';
 import { todayIso } from '@/lib/format';
 import { useAuth } from '@/state/auth';
 import { useBookingDraft } from '@/state/bookingDraft';
@@ -42,7 +45,7 @@ const STEP_INDEX = { service: 0, schedule: 1, preference: 2, nurse: 3, review: 4
 type ErrorKey = 'service' | 'startDate' | 'days' | 'address' | 'nurse';
 
 export default function BookScreen() {
-  const { t, money, daysLabel } = useI18n();
+  const { t, l, money, daysLabel } = useI18n();
   const params = useLocalSearchParams<{ service?: string }>();
   const { draft, step, setStep, update, reset, hydrated, keyForSubmit } = useBookingDraft();
   const { user, isAuthenticated } = useAuth();
@@ -115,6 +118,8 @@ export default function BookScreen() {
         onSuccess: (booking) => {
           reset();
           router.replace({ pathname: '/checkout/[id]', params: { id: booking.id } });
+          // the moment updates matter: ask for notification permission now (never on first launch)
+          void registerForPush({ ask: true });
         },
         onError: (error) => {
           if (error instanceof ApiError && error.code === 'conflict') {
@@ -223,6 +228,13 @@ export default function BookScreen() {
                 ))}
               </View>
             </View>
+            <SelectField
+              label={t('booking.emirate')}
+              sheetTitle={t('booking.emirate')}
+              value={draft.emirate ?? findEmirate(profile?.city)?.id ?? ''}
+              options={emirates.map((e) => ({ value: e.id, label: l(e.name) }))}
+              onChange={(emirate) => patch({ emirate })}
+            />
             <TextField label={t('booking.address')} value={draft.address ?? ''} onChangeText={(address) => patch({ address })} placeholder={t('booking.addressPlaceholder')} error={errors.address} autoComplete="street-address" />
             <TextField label={t('booking.notes')} value={draft.notes ?? ''} onChangeText={(notes) => patch({ notes })} placeholder={t('booking.notesPlaceholder')} multiline />
           </>

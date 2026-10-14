@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { Text } from '@/components/ui/Text';
 import { useI18n } from '@/i18n';
+import { inboxApi } from '@/api/inbox';
 import { colors } from '@/theme/colors';
 import { radii } from '@/theme/radii';
 
@@ -19,10 +20,11 @@ interface Values {
   message: string;
 }
 
-/** No contact endpoint exists in the backend: the form validates and says plainly that nothing was sent. */
+/** Contact form → POST /public/contact. On failure the text stays in the form so the user can retry. */
 export default function ContactScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const schema = useMemo(
     () =>
       z.object({
@@ -34,10 +36,15 @@ export default function ContactScreen() {
   );
   const { control, handleSubmit, formState, reset } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '', email: '', message: '' } });
   const e = formState.errors;
-  const onSubmit = handleSubmit(async () => {
-    await new Promise((r) => setTimeout(r, 500));
-    setSent(true);
-    reset();
+  const onSubmit = handleSubmit(async (v) => {
+    setFailed(false);
+    try {
+      await inboxApi.sendContact({ ...v, locale });
+      setSent(true);
+      reset();
+    } catch {
+      setFailed(true);
+    }
   });
   return (
     <Screen header="back" title={t('nav.contact')} keyboard>
@@ -51,9 +58,14 @@ export default function ContactScreen() {
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }} accessibilityLiveRegion="polite">
               <CheckCircle2 size={18} color={colors.brandDark} />
               <Text variant="small" color={colors.brandDark} style={{ flex: 1 }}>
-                {t('contactPage.success')}
+                {t('contactPage.successLive')}
               </Text>
             </View>
+          ) : null}
+          {failed ? (
+            <Text variant="small" color={colors.coralText} accessibilityRole="alert">
+              {t('contactPage.error')}
+            </Text>
           ) : null}
           <Button size="lg" fullWidth loading={formState.isSubmitting} onPress={onSubmit}>
             {t('contactPage.send')}

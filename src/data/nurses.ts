@@ -16,7 +16,7 @@ export const nurses: Nurse[] = [
     en: 'Layla focuses on elderly and post-surgery care. Families describe her as unhurried and observant — she notices the small changes that matter.',
     ar: 'تركّز ليلى على رعاية كبار السن وما بعد الجراحة. تصفها العائلات بالهدوء ودقة الملاحظة؛ فهي تلاحظ التغييرات الصغيرة المهمة.'
   },
-  city: { en: 'Riyadh', ar: 'الرياض' },
+  city: { en: 'Dubai', ar: 'دبي' },
   serviceIds: ['svc-elderly', 'svc-postsurgery', 'svc-medication'],
   languages: [{ en: 'Arabic', ar: 'العربية' }, { en: 'English', ar: 'الإنجليزية' }],
   experienceYears: 9,
@@ -37,7 +37,7 @@ export const nurses: Nurse[] = [
     en: 'Daniel supports recovery after hospital stays and wound care at home. He is known for clear explanations and steady, practical help.',
     ar: 'يدعم دانيال التعافي بعد الإقامة في المستشفى والعناية بالجروح في المنزل. يُعرف بشرحه الواضح ومساعدته العملية الثابتة.'
   },
-  city: { en: 'Jeddah', ar: 'جدة' },
+  city: { en: 'Abu Dhabi', ar: 'أبوظبي' },
   serviceIds: ['svc-wound', 'svc-recovery', 'svc-postsurgery', 'svc-checkin'],
   languages: [{ en: 'English', ar: 'الإنجليزية' }],
   experienceYears: 14,
@@ -58,7 +58,7 @@ export const nurses: Nurse[] = [
     en: 'Grace has spent most of her career with older adults and long-term arrangements. She builds routines that feel familiar, not clinical.',
     ar: 'أمضت غريس معظم مسيرتها مع كبار السن والترتيبات طويلة الأمد. تبني روتيناً مألوفاً لا يشعر بالطابع السريري.'
   },
-  city: { en: 'Riyadh', ar: 'الرياض' },
+  city: { en: 'Dubai', ar: 'دبي' },
   serviceIds: ['svc-longterm', 'svc-elderly', 'svc-overnight', 'svc-daily'],
   languages: [{ en: 'English', ar: 'الإنجليزية' }, { en: 'Mandarin', ar: 'الماندرين' }],
   experienceYears: 21,
@@ -78,7 +78,7 @@ export const nurses: Nurse[] = [
     en: 'Omar works with men who prefer a male caregiver for personal care and recovery. Patient, good-humoured, and reliable on timing.',
     ar: 'يعمل عمر مع الرجال الذين يفضّلون مقدّم رعاية رجلاً في العناية الشخصية والتعافي. صبور وخفيف الظل ومنضبط في المواعيد.'
   },
-  city: { en: 'Dammam', ar: 'الدمام' },
+  city: { en: 'Sharjah', ar: 'الشارقة' },
   serviceIds: ['svc-daily', 'svc-recovery', 'svc-medication', 'svc-companionship'],
   languages: [{ en: 'Arabic', ar: 'العربية' }, { en: 'English', ar: 'الإنجليزية' }],
   availability: 'available',
@@ -97,7 +97,7 @@ export const nurses: Nurse[] = [
     en: 'Sofia handles routine nursing visits and wound care with a calm, precise approach. She keeps thorough visit notes for families.',
     ar: 'تتولى صوفيا الزيارات التمريضية الروتينية والعناية بالجروح بأسلوب هادئ ودقيق، وتحتفظ بملاحظات زيارة وافية للعائلات.'
   },
-  city: { en: 'Jeddah', ar: 'جدة' },
+  city: { en: 'Abu Dhabi', ar: 'أبوظبي' },
   serviceIds: ['svc-nursing', 'svc-wound', 'svc-checkin'],
   languages: [{ en: 'English', ar: 'الإنجليزية' }, { en: 'Spanish', ar: 'الإسبانية' }],
   experienceYears: 7,
@@ -118,7 +118,7 @@ export const nurses: Nurse[] = [
     en: 'Priya supports families through care planning and medication routines, and is happiest when everyone understands the plan.',
     ar: 'تدعم بريا العائلات في تخطيط الرعاية وروتين الأدوية، وتسعد حين يفهم الجميع الخطة.'
   },
-  city: { en: 'Riyadh', ar: 'الرياض' },
+  city: { en: 'Dubai', ar: 'دبي' },
   serviceIds: ['svc-planning', 'svc-medication', 'svc-nursing', 'svc-elderly'],
   languages: [{ en: 'English', ar: 'الإنجليزية' }, { en: 'Hindi', ar: 'الهندية' }, { en: 'Malayalam', ar: 'المالايالامية' }],
   experienceYears: 12,

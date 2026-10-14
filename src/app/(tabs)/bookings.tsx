@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { BookingCard } from '@/components/cards/BookingCard';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { Screen } from '@/components/layout/Screen';
@@ -9,12 +9,13 @@ import { Chip } from '@/components/ui/Chip';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { QueryError, StateMessage } from '@/components/ui/StateMessage';
-import { useBookings } from '@/hooks/useBookings';
+import { useBookingList } from '@/hooks/useBookings';
 import { useCatalogData } from '@/hooks/useCatalog';
 import { useI18n, type TranslationKey } from '@/i18n';
 import { tabForStatus } from '@/lib/bookingStatus';
 import { useAuth } from '@/state/auth';
 import type { Booking, BookingTab } from '@/types/booking';
+import { colors } from '@/theme/colors';
 
 const PATIENT_TABS: BookingTab[] = ['upcoming', 'in_progress', 'completed', 'cancelled'];
 type NurseTab = 'requests' | 'schedule' | 'completed';
@@ -40,7 +41,7 @@ export default function BookingsScreen() {
 
 function PatientBookings() {
   const { t } = useI18n();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useBookings();
+  const { data, isLoading, isError, error, refetch, isRefetching, hasNextPage, fetchNextPage, isFetchingNextPage } = useBookingList();
   const { serviceById } = useCatalogData();
   const [tab, setTab] = useState<BookingTab>('upcoming');
   const [term, setTerm] = useState('');
@@ -63,8 +64,12 @@ function PatientBookings() {
         data={isLoading || isError ? [] : list}
         keyExtractor={(b) => b.id}
         contentContainerStyle={styles.content}
-        refreshing={isRefetching}
+        refreshing={isRefetching && !isFetchingNextPage}
         onRefresh={() => void refetch()}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+        }}
+        onEndReachedThreshold={0.5}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 20 }}>
@@ -93,7 +98,8 @@ function PatientBookings() {
         }
         ListFooterComponent={
           !isLoading && !isError ? (
-            <View style={{ marginTop: 24 }}>
+            <View style={{ marginTop: 24, gap: 16 }}>
+              {isFetchingNextPage ? <ActivityIndicator color={colors.brand} accessibilityLabel={t('common.loading')} /> : null}
               <Button fullWidth href="/book">
                 {t('account.qaBook')}
               </Button>
@@ -107,7 +113,7 @@ function PatientBookings() {
 
 function NurseBookings() {
   const { t } = useI18n();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useBookings();
+  const { data, isLoading, isError, error, refetch, isRefetching, hasNextPage, fetchNextPage, isFetchingNextPage } = useBookingList();
   const [tab, setTab] = useState<NurseTab>('requests');
   const list = useMemo(() => (data ?? []).filter((b) => nurseTab(b) === tab).sort((a, b) => a.startDateTime.localeCompare(b.startDateTime)), [data, tab]);
   const counts = useMemo(() => {
@@ -124,8 +130,12 @@ function NurseBookings() {
         data={isLoading || isError ? [] : list}
         keyExtractor={(b) => b.id}
         contentContainerStyle={styles.content}
-        refreshing={isRefetching}
+        refreshing={isRefetching && !isFetchingNextPage}
         onRefresh={() => void refetch()}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+        }}
+        onEndReachedThreshold={0.5}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 20 }}>
@@ -150,6 +160,9 @@ function NurseBookings() {
           ) : (
             <StateMessage title={t('account.emptyTab')} />
           )
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? <ActivityIndicator style={{ marginTop: 20 }} color={colors.brand} accessibilityLabel={t('common.loading')} /> : null
         }
       />
     </Screen>

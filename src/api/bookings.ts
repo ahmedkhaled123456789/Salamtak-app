@@ -1,25 +1,19 @@
 import type { Booking, BookingDraft, HistoryEntry, PaymentIntent, PriceQuote } from '@/types/booking';
+import { DEFAULT_EMIRATE, findEmirate } from '@/data/emirates';
 import type { Nurse } from '@/types/nurse';
 import { ApiError, request, type Page } from './client';
 import { careWindow, toBooking, toHistory, toLine, type ApiBooking, type ApiHistory } from './bookingMapper';
 
-/** City-centre coordinates the website uses: the API checks a booking address against the nurse's service radius. */
-const CITY_COORDS: Record<string, { latitude: number; longitude: number }> = {
-  riyadh: { latitude: 24.7136, longitude: 46.6753 },
-  jeddah: { latitude: 21.4858, longitude: 39.1925 },
-  dammam: { latitude: 26.4207, longitude: 50.0888 },
-  dubai: { latitude: 25.2048, longitude: 55.2708 },
-  'abu dhabi': { latitude: 24.4539, longitude: 54.3773 },
-  sharjah: { latitude: 25.3463, longitude: 55.4209 },
-};
-const DEFAULT_COORDS = CITY_COORDS.dubai!;
-
-export function coordsFor(...cities: (string | undefined)[]): { latitude: number; longitude: number } {
-  for (const c of cities) {
-    const hit = c ? CITY_COORDS[c.trim().toLowerCase()] : undefined;
-    if (hit) return hit;
+/**
+ * Coordinates for the API's service-radius check: the emirate chosen in the booking, then the patient's city, then
+ * the nurse's city (UAE emirates, data/emirates.ts); Dubai as the last resort.
+ */
+export function coordsFor(...places: (string | undefined)[]): { latitude: number; longitude: number } {
+  for (const place of places) {
+    const hit = findEmirate(place);
+    if (hit) return { latitude: hit.latitude, longitude: hit.longitude };
   }
-  return DEFAULT_COORDS;
+  return { latitude: DEFAULT_EMIRATE.latitude, longitude: DEFAULT_EMIRATE.longitude };
 }
 
 interface ApiQuote {
@@ -64,8 +58,8 @@ export interface QuoteInput {
   nurse?: Nurse;
 }
 
-function locationFor({ patientCity, nurse }: QuoteInput) {
-  return coordsFor(patientCity, nurse?.city.en);
+function locationFor({ draft, patientCity, nurse }: QuoteInput) {
+  return coordsFor(draft.emirate, patientCity, nurse?.city.en);
 }
 
 /** Quote token per idempotency key, so a retry (same key) sends an identical body and the backend recognises it. */
@@ -127,6 +121,12 @@ export const bookingsApi = {
       },
     });
     return toBooking(created);
+  },
+
+  /** One page of the booking history, newest first. */
+  async page(page: number, limit = 30): Promise<{ items: Booking[]; page: number; hasMore: boolean }> {
+    const res = await request<Page<ApiBooking>>(`/bookings?page=${page}&limit=${limit}`);
+    return { items: res.items.map(toBooking), page, hasMore: res.meta ? page < res.meta.totalPages : false };
   },
 
   async list(): Promise<Booking[]> {

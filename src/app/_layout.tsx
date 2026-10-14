@@ -36,9 +36,10 @@ function Gate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts(fontAssets);
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
   const [client] = useState(makeQueryClient);
-  if (!fontsLoaded) return null;
+  // A font that fails to load must not keep the splash up forever: fall back to system fonts.
+  if (!fontsLoaded && !fontError) return null;
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={client}>

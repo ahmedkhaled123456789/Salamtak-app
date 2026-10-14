@@ -7,7 +7,7 @@ export const colors = {
   mintSoft: '#EEF9F4',
   ivory: '#FAFAF7',
   ink: '#172B2A',
-  muted: '#6B7C7A',
+  muted: '#5F706E', // AA contrast (≥4.5:1) on ivory, white and mint; was #6B7C7A
   line: '#E5ECE9',
   lineStrong: '#CFDCD7',
   coral: '#D9694A',

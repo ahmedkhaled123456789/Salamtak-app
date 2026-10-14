@@ -57,7 +57,7 @@ describe('catalogue mapping', () => {
       gender: 'FEMALE',
       averageRating: 4.8,
       totalReviews: 3,
-      city: 'Riyadh',
+      city: 'Dubai',
     });
     expect(n.id).toBe('nurse-1');
     expect(n.portrait).toBe('');

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useI18n } from '@/i18n';
+import { inboxApi } from '@/api/inbox';
 import { colors } from '@/theme/colors';
 import { radii } from '@/theme/radii';
 import { fontFamily } from '@/theme/typography';
@@ -14,19 +15,22 @@ import { fontFamily } from '@/theme/typography';
 const schema = z.object({ email: z.string().trim().email() });
 type Values = z.infer<typeof schema>;
 
-/**
- * The backend has no subscription endpoint: the address is validated and the user is told plainly that it was
- * not saved (same behaviour as the website's demonstration form).
- */
+/** Newsletter sign-up → POST /public/newsletter (double opt-in: the API emails a confirmation link). */
 export function NewsletterForm({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
   const { t, locale, isRTL } = useI18n();
   const [done, setDone] = useState(false);
+  const [failed, setFailed] = useState(false);
   const { control, handleSubmit, formState, reset } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: '' } });
   const light = tone === 'light';
-  const onSubmit = async () => {
-    await new Promise((r) => setTimeout(r, 350));
-    setDone(true);
-    reset();
+  const onSubmit = async (v: Values) => {
+    setFailed(false);
+    try {
+      await inboxApi.subscribeNewsletter(v.email.trim(), locale);
+      setDone(true);
+      reset();
+    } catch {
+      setFailed(true); // keep the address so the user can retry
+    }
   };
   return (
     <View>
@@ -64,14 +68,18 @@ export function NewsletterForm({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
       </View>
       <View style={styles.msg} accessibilityLiveRegion="polite">
         {formState.errors.email ? (
-          <Text variant="small" color={light ? '#FFC9B8' : colors.coral}>
+          <Text variant="small" color={light ? '#FFC9B8' : colors.coralText}>
             {t('validation.email')}
+          </Text>
+        ) : failed ? (
+          <Text variant="small" color={light ? '#FFC9B8' : colors.coralText} accessibilityRole="alert">
+            {t('newsletter.error')}
           </Text>
         ) : done ? (
           <View style={styles.done}>
             <CheckCircle2 size={16} color={light ? colors.mint : colors.brandDark} />
             <Text variant="small" color={light ? colors.mint : colors.brandDark} style={{ flex: 1 }}>
-              {t('newsletter.success')}
+              {t('newsletter.successLive')}
             </Text>
           </View>
         ) : (
